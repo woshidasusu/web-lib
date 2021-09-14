@@ -1,0 +1,31 @@
+// 业务表单组件都放到 business 目录下维护
+// 其余均为基础表单组件，可通用
+export default {
+  kf_requester: () => import('./business/taskRegister/requester/index'),
+  kf_task: () => import('./business/taskRegister/task/index'),
+  kf_filterRule: () => import('./business/survey/filterRule/index'),
+  kf_pushWay: () => import('./business/survey/pushWay/index'),
+  kf_select_building: () => import('./business/channelCode/kf_selectBuilding/index'),
+  kf_add_set: () => import('./business/channelCode/kf_addSet/index'),
+  kf_triggerRule: () => import('./business/survey/triggerRule/index'),
+  kf_pushHz: () => import('./business/survey/pushHz/index'),
+  checkboxGroup: () => import('./common/form/checkboxGroup/index'),
+  container: () => import('./common/layout/container/index'),
+  datePicker: () => import('./common/form/datePicker/index'),
+  hidden: () => import('./common/form/hidden/index'),
+  input: () => import('./common/form/input/index'),
+  inputNumber: () => import('./common/form/inputNumber/index'),
+  dynamicInput: () => import('./common/form/dynamicInput/index'),
+  radioGroup: () => import('./common/form/radioGroup/index'),
+  select: () => import('./common/form/select/index'),
+  search: () => import('./common/form/search/index'),
+  switch: () => import('./common/form/switch/index'),
+  text: () => import('./common/form/text/index'),
+  textarea: () => import('./common/form/textarea/index'),
+  title: () => import('./common/ui/title/index'),
+  element: () => import('./common/ui/element/index'),
+  searchBar: () => import('./common/layout/searchBar/index'),
+  slot: () => import('./common/ui/slot/index'),
+  tabs: () => import('./common/layout/tabs/index'),
+  chinaArea: () => import('./common/form/chinaArea/index')
+};
