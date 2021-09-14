@@ -1,0 +1,64 @@
+{
+  "name": "kf-lib",
+  "version": "1.0.0",
+  "description": "前端基座（axios，local-data，theme，vconsole，sdk ...）",
+  "main": "static/lib/index.js",
+  "scripts": {
+    "dev": "vue-cli-service serve --mode=dev",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "vue-cli-service build"
+  },
+  "dependencies": {
+    "@yl/localstorage": "1.0.5",
+    "@yl/page-watermark": "0.1.9",
+    "@yl/web-upload": "1.0.19",
+    "axios": "^0.21.1",
+    "element-ui": "^2.15.3",
+    "qs": "^6.5.2",
+    "vconsole": "^3.9.0",
+    "vue": "^2.6.11",
+    "vue-codemirror": "^4.0.6",
+    "vue-router": "^3.0.7",
+    "vuedraggable": "^2.17.0",
+    "vuex": "^3.0.1"
+  },
+  "devDependencies": {
+    "@vue/cli-plugin-babel": "^4.5.0",
+    "@vue/cli-plugin-eslint": "^4.5.0",
+    "@vue/cli-service": "^4.5.0",
+    "@vue/eslint-config-prettier": "4.0.x",
+    "@vue/eslint-config-standard": "4.0.x",
+    "babel-eslint": "10.1.0",
+    "babel-plugin-component": "^1.1.1",
+    "babel-plugin-transform-class-properties": "^6.24.1",
+    "core-js": "^3.6.5",
+    "eslint": "7.22.0",
+    "eslint-config-prettier": "8.1.0",
+    "eslint-config-standard": "14.1.1",
+    "eslint-plugin-standard": "5.0.0",
+    "eslint-plugin-vue": "7.7.0",
+    "hard-source-webpack-plugin": "^0.13.1",
+    "husky": "5.2.0",
+    "less": "^3.0.4",
+    "less-loader": "^6.0.0",
+    "lint-staged": "10.5.4",
+    "md-enhance-vue": "^1.0.1",
+    "node-sass": "^4.13.1",
+    "postcss-css-variables": "^0.17.0",
+    "prettier": "1.19.1",
+    "sass-loader": "^9.0.3",
+    "shelljs": "^0.8.4",
+    "standard": "16.0.3",
+    "vue-template-compiler": "^2.6.11"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/woshidasusu/web-lib.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/woshidasusu/web-lib/issues"
+  },
+  "homepage": "https://github.com/woshidasusu/web-lib#readme"
+}

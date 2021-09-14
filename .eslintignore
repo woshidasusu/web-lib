@@ -1,0 +1,10 @@
+/build/
+/config/
+/dist/
+/*.js
+/test/unit/coverage/
+/src/assets
+/static/
+/public/
+/docs/
+*.md
