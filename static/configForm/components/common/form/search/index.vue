@@ -1,10 +1,13 @@
 <template>
   <el-form-item
     :label="formTemplate.label"
-    :prop="formTemplate.name"
+    :prop="parentModelName + formTemplate.name"
     :label-width="formTemplate.labelWidth"
     :required="!!+formTemplate.required"
-    :rules="formTemplate.validateRules"
+    :rules="[
+      ...(formTemplate.validateRules || []),
+      { required: !!+formTemplate.required, message: formTemplate.label + '不能为空' }
+    ]"
   >
     <m-select
       v-model="model"
@@ -19,6 +22,7 @@
       :multiple="!!+formTemplate.multiple"
       :disabled="!!+formTemplate.disabled"
       :clearable="!!+formTemplate.clearable"
+      v-bind="formTemplate.$props"
       size="medium"
       v-on="onEvents"
     >
@@ -49,6 +53,11 @@ export default {
       default: () => {
         return {};
       }
+    },
+    // 在 formModel 中，父级的字段名
+    parentModelName: {
+      type: String,
+      default: ''
     }
   },
   data() {
@@ -102,8 +111,18 @@ export default {
   },
   watch: {
     metadata: {
-      handler: function (newV) {
+      handler: function(newV) {
         this.parseMetadata();
+      },
+      immediate: true
+    },
+    model: {
+      handler: function(newV) {
+        const nameField = this.formTemplate.backfillName;
+        if (newV && nameField && this.formModel[nameField]) {
+          // 数据回填处理
+          this.initData = [{ [this.fieldConfig.key]: this.formModel[nameField], [this.fieldConfig.value]: newV }];
+        }
       },
       immediate: true
     }
@@ -127,6 +146,9 @@ export default {
       return true;
     },
     handleEvent(event, _id, eventData) {
+      if (event === 'change' && this.formTemplate.backfillName) {
+        this.formModel[this.formTemplate.backfillName] = eventData && eventData[this.fieldConfig.key];
+      }
       this.$emit('event', event, _id, eventData);
     },
     async parseInitOptions() {

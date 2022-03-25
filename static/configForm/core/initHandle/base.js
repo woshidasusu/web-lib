@@ -11,4 +11,19 @@ export default class BaseInitHandle {
   }
 
   async exec() {}
+
+  log(...args) {
+    if (window.__debug_log__) {
+      console.log(`[initHandle/${this.handle.type}]`, ...args);
+    }
+  }
+
+  async parseConditions(config) {
+    let result = true;
+    const { conditions, conditionType = 'every' } = config || {};
+    if (conditions) {
+      result = await this.coreProcessor.parseConditions(conditions, conditionType);
+    }
+    return result;
+  }
 }

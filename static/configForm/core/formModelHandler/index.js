@@ -31,6 +31,12 @@ export default class FormModelHandler {
         } catch (error) {
           console.error(error);
         }
+        // 加入钩子，支持在拉取到初始化数据后，注入 service 来自己加工处理数据
+        const { parseServiceName } = initFormMode;
+        if (parseServiceName) {
+          const dataService = this.coreProcessor.getDataService();
+          res = await dataService.exec(parseServiceName, { $event: res });
+        }
         if (res) {
           return res;
         }
@@ -57,7 +63,7 @@ export default class FormModelHandler {
           v._id = v.type + '_' + _id++;
         }
         if (v._id != null) {
-          // 没有 type 的表示多维数组，无需处理
+          // 只缓存有 _id 的数据，没有 _id 意味着也没有 type，表示多维数组，无需处理
           _map[v._id] = model;
         }
         // 如果表单组件有配置 name 属性时

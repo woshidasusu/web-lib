@@ -8,6 +8,7 @@ import BaseEventHandle from './base';
  */
 export default class ExecFunctionEvent extends BaseEventHandle {
   async exec() {
+    this.log('exec() start, eventHandle =', this.eventHandle, 'eventData =', this.eventData);
     const { functionBody } = this.eventHandle;
     const args = { context: this.coreProcessor, $event: this.eventData };
     // 参数只接收对象类型，用的时候统一从 args 里取

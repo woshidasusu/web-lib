@@ -3,6 +3,8 @@ export default {
   type: 'search',
   label: '搜索框',
   required: 0,
+  width: '',
+  style: '',
   hidden: 0,
   name: '',
   disabled: 0,

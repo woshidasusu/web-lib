@@ -4,6 +4,7 @@ import BaseDataSource from './base';
  */
 export default class WindowDataSource extends BaseDataSource {
   async exec() {
+    this.log('exec() start, dataSource =', this.dataSource, 'eventData =', this.eventData);
     const { symbol, dataKey } = this.dataSource;
     let result = window;
     if (symbol) {
@@ -20,6 +21,7 @@ export default class WindowDataSource extends BaseDataSource {
         result = result[key];
       }
     }
+    this.log('exec() return', result);
     return result;
   }
 }

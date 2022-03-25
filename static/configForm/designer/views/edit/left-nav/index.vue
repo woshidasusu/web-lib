@@ -15,7 +15,7 @@
           >
             <div v-for="(comp, j) in item.components" :key="j" title="按住左键拖拽" class="item">
               <i class="el-icon-circle-plus-outline disabled" title="单击快速添加" @click.stop="quickAdd(comp)"></i>
-              {{ comp.__nameShowInDesigner }} -（ {{ comp.type }} ）
+              {{ comp.__nameShowInDesigner }} <span style="white-space: nowrap;">（ {{ comp.type }} ）</span>
             </div>
           </draggable>
         </div>
@@ -33,7 +33,7 @@
           >
             <div v-for="(comp, j) in item.components" :key="j" title="按住左键拖拽" class="item">
               <i class="el-icon-circle-plus-outline disabled" title="单击快速添加" @click.stop="quickAdd(comp)"></i>
-              {{ comp.__nameShowInDesigner }} -（ {{ comp.type }} ）
+              {{ comp.__nameShowInDesigner }} <span style="white-space: nowrap;">（ {{ comp.type }} ）</span>
             </div>
           </draggable>
         </div>
@@ -65,6 +65,15 @@ export default {
   methods: {
     onMove(e, originalEvent) {
       if (e.relatedRect.left === 40) {
+        // 禁止掉左边组件列表区域的拖拽
+        return false;
+      }
+      const containerTypes = ['container'];
+      if (
+        e.to.id === 'mainDraggableContainer' &&
+        containerTypes.includes(e.originalEvent.target.getAttribute('type'))
+      ) {
+        // 当拖到组件在容器区域时，禁止掉最外层区域的拖拽，否则会造成上下反复滑动
         return false;
       }
       if (this.lastDragDiv !== e.dragged) {
@@ -80,6 +89,7 @@ export default {
       console.log('onClone', e);
     },
     quickAdd(data) {
+      data = JSON.parse(JSON.stringify(data));
       this.updateCurDragComponent(data);
       this.$emit('quickAdd', data);
     },

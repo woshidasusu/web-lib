@@ -1,24 +1,16 @@
 <template>
   <div v-loading="loading">
-    <template v-for="(item, i) in components">
-      <slot :name="'before' + item._id" v-bind="metadataMap['before' + item._id]"></slot>
-      <component
-        :is="ALL_COMPONENTS[item.type] || ALL_COMPONENTS['element']"
-        v-if="!+item.hidden"
-        :ref="item._id"
-        :key="i"
-        :metadata="item"
-        :type="item.type"
-        @event="handleComponentEvent"
-      ></component>
-      <slot :name="'after' + item._id" v-bind="metadataMap['after' + item._id]"></slot>
-    </template>
+    <data-container :metadata="{ components: components }" :form-model="formModel" @event="handleComponentEvent">
+      <template v-for="item in slots" #[item]="data">
+        <slot :name="item" v-bind="data"></slot>
+      </template>
+    </data-container>
   </div>
 </template>
 
 <script>
 import CoreProcessor from './core';
-import ALL_COMPONENTS from '@/components/configForm/components';
+import DataContainer from '@/components/configForm/components/common/layout/dataContainer';
 
 /**
  * 配置化-列表页
@@ -30,20 +22,29 @@ const log = (...args) => {
   }
 };
 export default {
-  components: {},
+  components: { DataContainer },
   inject: ['getStore'],
-  props: {},
+  props: {
+    // 解析完 formModel 数据模型后触发，参数会传入 formModel 对象，可以对数据模型操作，来处理一些初始化工作
+    afterParseFormModel: {
+      type: Function,
+      default: () => undefined
+    }
+  },
   data() {
     return {
       loading: false,
       metadata: null,
-      ALL_COMPONENTS: ALL_COMPONENTS, // 所有支持的表单项列表
-      components: []
+      components: [],
+      formModel: {}
     };
   },
   computed: {
-    metadataMap() {
-      return this.getStore()?.state()?.metadataMap || {};
+    formTemplate() {
+      return this.metadata || {};
+    },
+    slots() {
+      return Object.keys(this.$scopedSlots);
     }
   },
   watch: {},
@@ -55,6 +56,9 @@ export default {
   methods: {
     // 解析元数据
     async parseMetadata() {
+      if (!this.metadata) {
+        return;
+      }
       this.loading = true;
       log('parseMetadata()', this.metadata);
       // 先校验元数据格式的合法性
@@ -62,16 +66,22 @@ export default {
         this.loading = false;
         return;
       }
-
       let coreProcessor = new CoreProcessor();
       coreProcessor = this.getStore()?.state()?.coreProcessor;
-      // 解析所有组件的联动信息、校验规则等，并以 id 做缓存方便存取
+      // 解析获取数据模型
+      this.formModel = await coreProcessor.parseFormModel(this.metadata.components);
+      if (this.afterParseFormModel) {
+        await this.afterParseFormModel(this.formModel);
+      }
       await coreProcessor.parseComponents(this.metadata.components);
+      await coreProcessor.parseGlobalConfig(this.metadata);
+
       // 处理表单组件的初始化规则
       coreProcessor.handleInitRules();
+      log('parseFormModel()', this.formModel);
+
       // 渲染表单组件
       this.components = this.metadata.components;
-
       setTimeout(() => {
         this.loading = false;
       }, 0);
@@ -95,6 +105,10 @@ export default {
       coreProcessor = this.getStore()?.state()?.coreProcessor;
       coreProcessor.handleComponentEvent(event, formItemId, eventData);
       this.$emit('event', event, formItemId, eventData);
+    },
+    // 暴露给外部使用的方法
+    getFormModel() {
+      return this.formModel;
     }
   }
 };

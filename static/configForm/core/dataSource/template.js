@@ -4,8 +4,11 @@ import BaseDataSource from './base';
  */
 export default class WindowDataSource extends BaseDataSource {
   async exec() {
+    this.log('exec() start, dataSource =', this.dataSource, 'eventData =', this.eventData);
     const { dataKey } = this.dataSource;
     const key = dataKey || 'options';
-    return this.dataSource[key];
+    const result = this.dataSource[key];
+    this.log('exec() return', result);
+    return result;
   }
 }

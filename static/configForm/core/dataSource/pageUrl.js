@@ -5,7 +5,10 @@ import { getQuery } from '@/utils';
  */
 export default class PageUrlDataSource extends BaseDataSource {
   async exec() {
+    this.log('exec() start, dataSource =', this.dataSource, 'eventData =', this.eventData);
     const { dataKey } = this.dataSource;
-    return getQuery(dataKey, location.href) || '';
+    const result = getQuery(dataKey, location.href) || '';
+    this.log('exec() return', result);
+    return result;
   }
 }

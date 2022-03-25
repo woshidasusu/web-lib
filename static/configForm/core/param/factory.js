@@ -1,5 +1,8 @@
 import PageUrlParam from './pageUrl';
 import ConstantParam from './constant';
+import FormModelParam from './formModel';
+import DataServiceParam from './dataService';
+import EventContextParam from './eventContext';
 
 export default function getParam(coreProcessor, param, extraArgs = {}) {
   let { type } = param;
@@ -13,7 +16,10 @@ export default function getParam(coreProcessor, param, extraArgs = {}) {
   }
   const Cls = {
     pageUrl: PageUrlParam,
-    constant: ConstantParam
+    constant: ConstantParam,
+    formModel: FormModelParam,
+    dataService: DataServiceParam,
+    eventContext: EventContextParam
   }[type];
   return new Cls(coreProcessor, param, extraArgs);
 }

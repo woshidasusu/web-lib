@@ -16,7 +16,7 @@ export default async function request({ method = 'get', url, params, dataKey = '
   } catch (error) {
     console.error(error);
   }
-  if (res.errcode === 0) {
+  if (res.errcode === 0 && dataKey !== '') {
     const dataKeys = dataKey.split('.');
     let result = res;
     while (dataKeys.length > 0) {
@@ -28,6 +28,9 @@ export default async function request({ method = 'get', url, params, dataKey = '
       result = result[key];
     }
     return result;
+  }
+  if (res.errcode != null) {
+    return res;
   }
   return '';
 }
@@ -43,4 +46,19 @@ export function fetchFormMetadata(params) {
 export function submit(url, params) {
   const headers = { 'Content-Type': 'application/json;charset=UTF-8' };
   return axiosCommon.$POST(url, params, { headers });
+}
+
+// 更新表单元数据
+export function saveTemplateData(data) {
+  const headers = { 'Content-Type': 'application/json;charset=UTF-8' };
+  return axiosCommon.$POST('common-api/template/save', data, { headers });
+}
+
+export function getMetadataList(params) {
+  return axiosCommon.$GET('common-api/template/list', params);
+}
+
+// 启用
+export function enableTemplate(data) {
+  return axiosCommon.$GET('common-api/template/enable', data);
 }

@@ -1,10 +1,13 @@
 <template>
   <el-form-item
     :label="formTemplate.label"
-    :prop="formTemplate.name"
+    :prop="parentModelName + formTemplate.name"
     :label-width="formTemplate.labelWidth"
     :required="!!+formTemplate.required"
-    :rules="formTemplate.validateRules"
+    :rules="[
+      ...(formTemplate.validateRules || []),
+      { required: !!+formTemplate.required, message: formTemplate.label + '不能为空' }
+    ]"
   >
     <el-input
       v-model="model"
@@ -14,6 +17,7 @@
       :style="{ width: formTemplate.width || '100%' }"
       :placeholder="formTemplate.placeholder || `请输入${formTemplate.label || ''}`"
       :disabled="!!+formTemplate.disabled"
+      v-bind="formTemplate.$props"
       size="medium"
       v-on="onEvents"
     >
@@ -39,6 +43,11 @@ export default {
       default: () => {
         return {};
       }
+    },
+    // 在 formModel 中，父级的字段名
+    parentModelName: {
+      type: String,
+      default: ''
     }
   },
   data() {
@@ -77,7 +86,7 @@ export default {
   },
   watch: {
     metadata: {
-      handler: function (newV) {
+      handler: function(newV) {
         this.parseMetadata();
       },
       immediate: true

@@ -38,7 +38,9 @@ export default class MetadataHandler {
           // 合并个性化元数据到标准元数据上
           this.mergeMetadata(standard, extend);
         }
-        return standard;
+        if (standard) {
+          return standard;
+        }
       }
     }
     // 本地元数据需要拷贝再使用，防止受到影响
@@ -81,10 +83,22 @@ export default class MetadataHandler {
   }
 
   /**
-   * 解析组件的联动关系、事件监听、初始化规则，以及缓存
+   * 解析组件的联动关系、事件监听、初始化规则，以及缓存，并将数据推送到数据仓库
    * @param {*} components
    */
   parseComponents(components) {
+    const { _initRulesMap, _metadataMap, _eventListenerMap } = this.getInfoByParseMetadata(components);
+    // 更新数据仓库里的数据
+    this.coreProcessor.updateInitRulesMap(_initRulesMap);
+    this.coreProcessor.updateMetadataMap(_metadataMap);
+    this.coreProcessor.updateEventListenerMap(_eventListenerMap);
+  }
+
+  /**
+   * 解析组件的联动关系、事件监听、初始化规则，以及缓存
+   * @param {*} components
+   */
+  getInfoByParseMetadata(components) {
     const _initRulesMap = {};
     const _metadataMap = {};
     const _eventListenerMap = {};
@@ -113,12 +127,10 @@ export default class MetadataHandler {
         }
       }
     }
-    // 更新数据仓库里的数据
-    const initRulesMap = this.coreProcessor.getStore()?.state()?.initRulesMap;
-    const metadataMap = this.coreProcessor.getStore()?.state()?.metadataMap;
-    const eventListenerMap = this.coreProcessor.getStore()?.state()?.eventListenerMap;
-    this.coreProcessor.getStore()?.commit('updateInitRulesMap', { ...initRulesMap, ..._initRulesMap });
-    this.coreProcessor.getStore()?.commit('updateMetadataMap', { ...metadataMap, ..._metadataMap });
-    this.coreProcessor.getStore()?.commit('updateEventListenerMap', { ...eventListenerMap, ..._eventListenerMap });
+    return {
+      _initRulesMap,
+      _metadataMap,
+      _eventListenerMap
+    };
   }
 }

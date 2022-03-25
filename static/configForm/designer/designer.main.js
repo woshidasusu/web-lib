@@ -1,6 +1,7 @@
 import Vue from 'vue';
+import VueRouter from 'vue-router';
 import App from './designer-app.vue';
-import router from './designer-router';
+import routes from './designer-router';
 import store from '@/store';
 
 import 'element-ui/lib/theme-chalk/index.css';
@@ -15,14 +16,23 @@ import pluinAjax from '@/plugins/Axios';
 import pluginTips from '@/plugins/Tips';
 import ylui from '@yl/ui';
 import '@yl/ui/lib/theme-chalk/index.css';
+import tableDialog from '@/components/tableDialog/install.js';
 
 Vue.use(ElementUI, { size: 'medium' });
 Vue.use(UI);
 Vue.use(pluinAjax);
 Vue.use(pluginTips);
+Vue.use(tableDialog);
 Vue.use(ylui);
 
 window.__store = store;
+
+Vue.use(VueRouter);
+
+const router = new VueRouter({
+  mode: 'history',
+  routes: [...routes, { path: '*', redirect: '/config-form' }]
+});
 
 /* eslint-disable no-new */
 new Vue({

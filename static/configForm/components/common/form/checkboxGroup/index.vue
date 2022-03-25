@@ -1,10 +1,13 @@
 <template>
   <el-form-item
     :label="formTemplate.label"
-    :prop="formTemplate.name"
+    :prop="parentModelName + formTemplate.name"
     :label-width="formTemplate.labelWidth"
     :required="!!+formTemplate.required"
-    :rules="formTemplate.validateRules"
+    :rules="[
+      ...(formTemplate.validateRules || []),
+      { type: 'array', required: !!+formTemplate.required, message: formTemplate.label + '不能为空' }
+    ]"
   >
     <m-checkbox-group
       v-model="model"
@@ -48,6 +51,11 @@ export default {
       default: () => {
         return {};
       }
+    },
+    // 在 formModel 中，父级的字段名
+    parentModelName: {
+      type: String,
+      default: ''
     }
   },
   data() {
@@ -102,10 +110,16 @@ export default {
   },
   watch: {
     metadata: {
-      handler: function (newV) {
+      handler: function(newV) {
         this.parseMetadata();
       },
       immediate: true
+    },
+    'metadata.dataSource': {
+      handler: async function(newV, oldV) {
+        const data = await this.coreProcessor.parseDataSource(newV);
+        this.options = data || [];
+      }
     }
   },
   methods: {

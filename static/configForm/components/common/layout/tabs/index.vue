@@ -13,14 +13,19 @@
       :lazy="!!+tab.lazy"
     >
       <template v-for="(item, i) in tab.components">
+        <!-- 第一版 slot 设计感觉不好用 -->
         <slot
           :name="'before' + item._id"
           v-bind="metadataMap['before' + item._id]"
           :form-model="insideFormModel"
         ></slot>
+        <!-- 第二版 slot 排版位置直接根据元数据配置的位置即可 -->
+        <template v-if="item.type === 'slot2'">
+          <slot v-if="!+item.hidden" :name="item.slotName" v-bind="item" :form-model="insideFormModel"></slot>
+        </template>
         <component
           :is="ALL_COMPONENTS[item.type] || ALL_COMPONENTS['element']"
-          v-if="!+item.hidden"
+          v-else-if="!+item.hidden"
           :key="'tc' + i"
           :style="item.style"
           :metadata="item"
@@ -88,7 +93,7 @@ export default {
   },
   watch: {
     metadata: {
-      handler: function (newV) {
+      handler: function(newV) {
         this.parseMetadata();
       },
       immediate: true

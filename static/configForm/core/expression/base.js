@@ -12,4 +12,10 @@ export default class BaseExpression {
   async exec() {
     return false;
   }
+
+  log(...args) {
+    if (window.__debug_log__) {
+      console.log(`[expression/${this.expression.expression}]`, ...args);
+    }
+  }
 }

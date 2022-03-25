@@ -1,139 +1,164 @@
 <template>
   <yl-search-bar
-    :limit="formTemplate.limit || 4"
-    :model="model"
-    :label-show-length="0"
-    :width="formTemplate.width || '220px'"
-    @search="search"
+    :limit="formTemplate.limit"
+    :model="formModel"
+    :class="formTemplate.class"
+    :style="{ ...formTemplate.style }"
+    :width="formTemplate.width || '260px'"
+    :show-clear="!!+formTemplate.showClear"
+    v-bind="formTemplate.$props"
+    v-on="onEvents"
   >
     <template v-for="(item, i) in components">
-      <input v-if="item.type === 'hidden'" :key="i" :name="item.name" :value="item.value" type="hidden" />
-      <yl-search-item v-else :key="i" :prop="item.name" :label="item.label" :width="item.width">
-        <!-- 输入框 -->
-        <el-input
-          v-if="item.type === 'input'"
-          v-model="model[item.name]"
-          size="medium"
-          :disabled="!!+item.disabled"
-          :placeholder="item.placeholder || '请输入' + item.label"
-        ></el-input>
-        <!-- 文字 -->
-        <span v-else-if="item.type === 'text'">{{ item.value }}</span>
-        <!-- 下拉搜索框 -->
-        <m-select
-          v-else-if="item.type === 'search'"
-          v-model="model[item.name]"
-          width="100%"
-          right-icon="search"
-          :label="(item.dataSource && item.dataSource.fieldConfig && item.dataSource.fieldConfig.key) || 'name'"
-          :value="(item.dataSource && item.dataSource.fieldConfig && item.dataSource.fieldConfig.value) || 'id'"
-          :remote-method="callRemoteMethod(item.dataSource)"
-          :placeholder="item.placeholder || `请选择${item.label || ''}`"
-          :multiple="!!+item.multiple"
-          :disabled="!!+item.disabled"
-          :clearable="!!+item.clearable"
-          :auto-fill-selected="!!+item.autoFillSelected"
-          size="medium"
-          v-on="onEvents"
-          @selected="handleChange($event, item)"
-        ></m-select>
+      <yl-search-item
+        v-if="!+item.hidden && !+item.putAway"
+        :key="item._id || item.prop || item.name || i"
+        :prop="item.prop || item.name"
+        :label="item.label"
+        :width="item.width"
+        :class="item.class"
+        class="search-item-container"
+        :style="{ ...item.style }"
+      >
+        <img
+          v-if="item.putAway === 0"
+          title="移除"
+          class="delIcon"
+          :src="require('@/assets/images/icon_clear.png')"
+          @click="putAwayItem(item)"
+        />
+        <data-container
+          style="width: 100%"
+          :metadata="{ components: [{ ...item, label: '', width: '' }] }"
+          :form-model="formModel"
+          :parent-model-name="parentModelName"
+          @event="handleComponentEvent"
+        >
+          <template v-if="$scopedSlots[item.slotName]" #[item.slotName]="data">
+            <slot :name="item.slotName" v-bind="data"></slot>
+          </template>
+        </data-container>
       </yl-search-item>
-      <!-- <yl-search-item :key="i + 'j'" :prop="item.name" :label="item.label" :width="item.width"
-        ><el-input></el-input
-      ></yl-search-item> -->
     </template>
+    <yl-search-item v-if="putAwayList.length" always-show-label label="添加筛选">
+      <el-select value="" placeholder="请选择其他筛选项" @change="showPutAwayItem">
+        <el-option v-for="(item, i) in putAwayList" :key="i" :label="item.label" :value="item"></el-option>
+      </el-select>
+    </yl-search-item>
   </yl-search-bar>
 </template>
+
 <script>
-import { MSelect } from '@/components/mui';
+/**
+ * 搜索栏容器，将子组件包裹在 yl-search-item 里
+ */
+import dataContainer from '../dataContainer';
 export default {
-  components: {
-    MSelect
-  },
-  inject: ['getStore'],
+  components: { dataContainer },
   props: {
     metadata: {
       type: Object,
       require: true
+    },
+    formModel: {
+      type: [Object, Array],
+      default: () => {
+        return {};
+      }
+    },
+    // 在 formModel 中，父级的字段名
+    parentModelName: {
+      type: String,
+      default: ''
     }
   },
   data() {
     return {
-      model: {},
-      components: []
+      uid: 1
     };
   },
   computed: {
     formTemplate() {
       return this.metadata || {};
     },
-    coreProcessor() {
-      return this.getStore()?.state()?.coreProcessor;
-    },
     onEvents() {
       const events = {};
       if (this.metadata?._id) {
+        events.search = this.handleEvent.bind(this, 'search', this.metadata._id);
         this.metadata?.$on?.forEach(v => {
           events[v] = this.handleEvent.bind(this, v, this.metadata._id);
         });
       }
       return events;
+    },
+    putAwayList() {
+      return this.formTemplate.components.filter(v => !!+v.putAway && !+v.hidden);
+    },
+    components() {
+      const list = [...this.formTemplate.components];
+      list.sort((a, b) => {
+        if (a.sort === b.sort) {
+          return 0;
+        }
+        return (a.sort || 0) - (b.sort || 0);
+      });
+      return this.uid && list;
     }
   },
   watch: {},
-  mounted() {
-    this.parseMetadata();
-  },
   methods: {
-    async parseMetadata() {
-      if (this.metadata) {
-        this.model = await this.coreProcessor.parseFormModel(this.metadata.components);
-      }
-      this.components = this.metadata.components;
-    },
-    search() {
-      this.$emit('event', 'search', this.formTemplate._id, this.model);
-    },
-    callRemoteMethod(dataSource) {
-      if (!dataSource) {
-        return [];
-      }
-      return async (keyword = '', page = 1) => {
-        const _dataSource = {};
-        const params = dataSource.params || [];
-        Object.assign(_dataSource, dataSource, {
-          params: [
-            ...params,
-            {
-              key: 'keyword',
-              value: keyword.trim()
-            },
-            {
-              key: 'page',
-              value: page
-            }
-          ]
-        });
-        const result = await this.coreProcessor.parseDataSource(_dataSource);
-        return result || [];
-      };
+    // 处理子组件上抛的事件，参数包括：事件类型，表单项_id，回传的数据
+    handleComponentEvent(...args) {
+      this.$emit('event', ...args);
     },
     handleEvent(event, _id, eventData) {
+      console.error(eventData);
       this.$emit('event', event, _id, eventData);
     },
-    handleChange(data, item) {
-      this.$emit('event', 'change', item._id, data);
-      this.search();
+    showPutAwayItem(item) {
+      if (item) {
+        item.sort = this.formTemplate.components?.length + this.uid++;
+        item.putAway = 0;
+        if (item._id) {
+          this.$emit('event', 'show', item._id, item);
+        }
+      }
     },
-    // 暴露给外部调用的方法
-    getSearchParams() {
-      return this.model;
+    putAwayItem(item) {
+      if (item) {
+        item.putAway = 1;
+        if (this.formModel && (item.prop || item.name)) {
+          this.formModel[item.prop || item.name] = '';
+        }
+        if (item._id) {
+          this.$emit('event', 'hidden', item._id, item);
+        }
+      }
     }
   }
 };
 </script>
+
 <style lang="scss" scoped>
 * {
   box-sizing: border-box;
+}
+.search-item-container {
+  position: relative;
+
+  &:hover {
+    .delIcon {
+      display: inline-block;
+    }
+  }
+}
+.delIcon {
+  display: none;
+  position: absolute;
+  top: 4px;
+  right: 2px;
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
 }
 </style>

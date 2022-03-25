@@ -6,9 +6,12 @@ import { getQuery } from '@/utils';
  */
 export default class PageUrlParam extends BaseParam {
   async exec() {
-    const { key } = this.param;
-    return {
-      [key]: getQuery(key, location.href) || ''
+    this.log('exec() start, param =', this.param);
+    const { key, dataKey = '' } = this.param;
+    const result = {
+      [key]: getQuery(dataKey || key, location.href) || ''
     };
+    this.log('exec() return', result);
+    return result;
   }
 }

@@ -1,7 +1,7 @@
 <template>
   <el-form-item
     :label="formTemplate.label"
-    :prop="formTemplate.name"
+    :prop="parentModelName + formTemplate.name"
     :label-width="formTemplate.labelWidth"
     :required="!!+formTemplate.required"
     :rules="formTemplate.validateRules"
@@ -52,6 +52,11 @@ export default {
       default: () => {
         return {};
       }
+    },
+    // 在 formModel 中，父级的字段名
+    parentModelName: {
+      type: String,
+      default: ''
     }
   },
   data() {
@@ -67,7 +72,7 @@ export default {
   },
   watch: {
     metadata: {
-      handler: function (newV) {
+      handler: function(newV) {
         this.parseMetadata();
       },
       immediate: true

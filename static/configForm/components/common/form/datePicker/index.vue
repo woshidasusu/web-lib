@@ -1,24 +1,29 @@
 <template>
   <el-form-item
     :label="formTemplate.label"
-    :prop="formTemplate.name"
+    :prop="parentModelName + formTemplate.name"
     :label-width="formTemplate.labelWidth"
     :required="!!+formTemplate.required"
-    :rules="formTemplate.validateRules"
+    :rules="[
+      ...(formTemplate.validateRules || []),
+      { required: !!+formTemplate.required, message: formTemplate.label + '不能为空' }
+    ]"
   >
     <el-date-picker
       v-model="model"
       :type="formTemplate.nativeType || 'datetime'"
-      :style="{ width: formTemplate.width || '100%' }"
+      :style="{ width: formTemplate.width || '100%', ...formTemplate.style }"
       :value-format="formTemplate.valueFormat || 'yyyy-MM-dd HH:mm'"
       :format="formTemplate.format || 'yyyy-MM-dd HH:mm'"
       :prefix-icon="formTemplate.prefixIcon || 'el-icon-date'"
       :placeholder="formTemplate.placeholder || `请选择${formTemplate.label || ''}`"
       :disabled="!!+formTemplate.disabled"
+      v-bind="formTemplate.$props"
       size="medium"
       v-on="onEvents"
     >
     </el-date-picker>
+    <span v-if="formTemplate.tip" class="tip-text"> {{ formTemplate.tip }}</span>
   </el-form-item>
 </template>
 
@@ -40,6 +45,11 @@ export default {
       default: () => {
         return {};
       }
+    },
+    // 在 formModel 中，父级的字段名
+    parentModelName: {
+      type: String,
+      default: ''
     }
   },
   data() {
@@ -78,10 +88,15 @@ export default {
   },
   watch: {
     metadata: {
-      handler: function (newV) {
+      handler: function(newV) {
         this.parseMetadata();
       },
       immediate: true
+    },
+    model(newV) {
+      if (this.metadata._id) {
+        this.handleEvent('dateChange', this.metadata._id, newV);
+      }
     }
   },
   methods: {
@@ -110,5 +125,10 @@ export default {
 <style lang="scss" scoped>
 * {
   box-sizing: border-box;
+}
+.tip-text {
+  font-size: 14px;
+  font-weight: 400;
+  color: rgba(153, 153, 153, 1);
 }
 </style>

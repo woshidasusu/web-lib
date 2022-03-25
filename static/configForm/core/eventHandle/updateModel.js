@@ -9,8 +9,14 @@ import BaseEventHandle from './base';
  */
 export default class UpdateModelEvent extends BaseEventHandle {
   async exec() {
-    const { formModelKey, eventDataKey } = this.eventHandle;
-    const formModel = this.coreProcessor.getFormModel();
+    this.log('exec() start, eventHandle =', this.eventHandle, 'eventData =', this.eventData);
+    const { formModelKey, eventDataKey, targetFormId } = this.eventHandle;
+    let formModel = this.coreProcessor.getFormModel();
+    if (targetFormId) {
+      // 从指定组件所挂载的 formModel 对象里取数，通常用于数组子项里的场景。
+      // 因为在数组里，组件 id 都是一样的，但组件对应的元数据、数据模型都是不一样的，所以增加该配置处理这种场景
+      formModel = this.coreProcessor.getFormModelMap()[targetFormId];
+    }
     const eventData = this.eventData;
     // 解析 . 连接符，获取最后一层字段挂载的对象
     const parseProp = (obj, keys) => {

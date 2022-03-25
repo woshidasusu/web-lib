@@ -18,10 +18,7 @@ function generateDataServiceCode({ metadataCache, dataServiceListFile, rootConte
     const value = metadataCache[v];
     if (value.dataServicePath) {
       const key = (`"${value.dataServicePath}"` || '').replace(rootContext, '').replace(/\\/g, '/');
-      codes += tab + key + ': dataServiceData' + i;
-      if (i !== arr.length - 1) {
-        codes += '\n';
-      }
+      codes += tab + key + ': dataServiceData' + i + ',\n';
     }
   });
   codes += '};\n';

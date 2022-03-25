@@ -55,6 +55,8 @@ export default {
   box-sizing: border-box;
 }
 .layout-container {
+  background: #fff;
+  min-height: 100vh;
   padding: 20px 40px;
 
   .title {

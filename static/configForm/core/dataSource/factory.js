@@ -5,6 +5,8 @@ import FormModelDataSource from './formModel';
 import PageUrlDataSource from './pageUrl';
 import StoreDataSource from './store';
 import DataServiceDataSource from './dataService';
+import ConstantDataSource from './constant';
+import EventContextDataSource from './eventContext';
 
 export default function getDataSource(coreProcessor, dataSource, extraArgs = {}) {
   const { type } = dataSource;
@@ -15,7 +17,9 @@ export default function getDataSource(coreProcessor, dataSource, extraArgs = {})
     formModel: FormModelDataSource,
     pageUrl: PageUrlDataSource,
     store: StoreDataSource,
-    dataService: DataServiceDataSource
+    constant: ConstantDataSource,
+    dataService: DataServiceDataSource,
+    eventContext: EventContextDataSource
   }[type];
   return new Cls(coreProcessor, dataSource, extraArgs);
 }

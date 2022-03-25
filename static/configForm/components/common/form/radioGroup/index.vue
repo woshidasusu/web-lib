@@ -1,16 +1,34 @@
 <template>
   <el-form-item
-    :label="formTemplate.label"
-    :prop="formTemplate.name"
-    :label-width="formTemplate.labelWidth"
+    :class="formTemplate.class"
+    :prop="parentModelName + formTemplate.name"
     :required="!!+formTemplate.required"
-    :rules="formTemplate.validateRules"
+    :rules="[
+      ...(formTemplate.validateRules || []),
+      { required: !!+formTemplate.required, message: formTemplate.label + '不能为空' }
+    ]"
   >
-    <el-radio-group v-model="model" :disabled="!!+formTemplate.disabled" v-on="onEvents">
-      <el-radio v-for="(item, i) in options" :key="i" :label="item[fieldConfig.value]" :disabled="!!+item.disabled">{{
+    <template slot="label">
+      {{ formTemplate.label }}
+      <!-- 兼容泽明之前定义的规则（- -以后涉及这种通用组件的规则定义，命名尽量直观、符合语义点） -->
+      <el-tooltip v-if="!!+formTemplate.isExplain" effect="light" placement="top">
+        <div slot="content" v-html="formTemplate.isExplainTip"></div>
+        <img v-if="!!+formTemplate.isExplain" :src="explainUrl" alt="" style="width:16px" />
+      </el-tooltip>
+      <template v-else-if="formTemplate.labelTooltip">
+        <el-tooltip v-bind="formTemplate.labelTooltip.$props">
+          <div v-if="formTemplate.labelTooltip.tips" slot="content">
+            <p v-for="(tip, i) in formTemplate.labelTooltip.tips" :key="i">{{ tip }}</p>
+          </div>
+          <img :src="explainUrl" alt="" style="width:16px" />
+        </el-tooltip>
+      </template>
+    </template>
+    <yl-radio-group v-model="model" :disabled="!!+formTemplate.disabled" v-on="onEvents">
+      <yl-radio v-for="(item, i) in options" :key="i" :label="item[fieldConfig.value]" :disabled="!!+item.disabled">{{
         item[fieldConfig.key]
-      }}</el-radio>
-    </el-radio-group>
+      }}</yl-radio>
+    </yl-radio-group>
   </el-form-item>
 </template>
 
@@ -34,6 +52,11 @@ export default {
       default: () => {
         return {};
       }
+    },
+    // 在 formModel 中，父级的字段名
+    parentModelName: {
+      type: String,
+      default: ''
     }
   },
   data() {
@@ -43,7 +66,8 @@ export default {
         key: 'label',
         value: 'value'
       },
-      insideModel: []
+      insideModel: [],
+      explainUrl: require('@/assets/images/explain.png')
     };
   },
   computed: {
@@ -87,10 +111,17 @@ export default {
   },
   watch: {
     metadata: {
-      handler: function (newV) {
+      handler: function(newV) {
         this.parseMetadata();
       },
       immediate: true
+    },
+    'metadata.dataSource': {
+      handler: async function(newV, oldV) {
+        const data = await this.coreProcessor.parseDataSource(newV);
+        this.options = data || [];
+        this.defaultFirstOption();
+      }
     }
   },
   methods: {
@@ -104,6 +135,7 @@ export default {
       const { dataSource } = this.metadata;
       this.options = await this.coreProcessor.parseDataSource(dataSource);
       this.options = this.options || [];
+      this.defaultFirstOption();
     },
     validateMetadata() {
       if (!this.metadata || typeof this.metadata !== 'object') {
@@ -119,6 +151,12 @@ export default {
     },
     handleEvent(event, _id, eventData) {
       this.$emit('event', event, _id, eventData);
+    },
+    defaultFirstOption() {
+      if (!!+this.formTemplate.isSelectFirst && !this.model && this.options?.length) {
+        const key = this.formTemplate.dataSource?.fieldConfig?.value || 'value';
+        this.model = this.options[0][key];
+      }
     }
   }
 };

@@ -11,4 +11,10 @@ export default class BaseCondition {
   async exec() {
     return false;
   }
+
+  log(...args) {
+    if (window.__debug_log__) {
+      console.log(`[condition/${this.condition.type}]`, ...args);
+    }
+  }
 }

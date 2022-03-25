@@ -19,12 +19,4 @@ export default {
 };
 </script>
 
-<style lang="scss" scoped>
-* {
-  box-sizing: border-box;
-}
-.content-container {
-  background: #fff;
-  min-height: 100vh;
-}
-</style>
+<style lang="scss" scoped></style>

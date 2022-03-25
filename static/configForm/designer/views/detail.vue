@@ -3,9 +3,10 @@
     <div style="margin-bottom: 20px">
       <span class="title">{{ title || '元数据' }}</span>
       <yl-space style="margin-left: 20px">
+        <el-button type="text" @click="getCode">生成前端元数据代码</el-button>
         <el-button type="text" @click="doCopy">复制</el-button>
         <el-button v-if="type === 'local'" type="text" @click="doTransform"
-          >格式转换成字符串（提供给后端去写 sql 更新服务端元数据）</el-button
+          >格式转换成 JSON 字符串（提供给后端去写 sql 更新服务端元数据）</el-button
         >
       </yl-space>
     </div>
@@ -42,12 +43,22 @@ export default {
   },
   destroyed() {},
   methods: {
+    getCode() {
+      let text = '/**\n* 可以通过运行 npm run dev-config-form，在配置化平台上可视化拖拽，也可手动维护';
+      text += '\n* 提供给后端时，需先把数据转成标准 json，再序列化成字符串，不清楚可以直接在配置化平台上操作';
+      text += '\n*/\n';
+      text += 'export default ';
+      copyAtClipboard(text + this.metadata);
+      this.$tips('代码生成并复制成功');
+    },
     doCopy() {
-      copyAtClipboard(this.metadata);
+      copyAtClipboard(JSON.stringify(JSON.parse(this.metadata)));
       this.$tips('复制成功');
     },
     doTransform() {
-      copyAtClipboard(JSON.stringify(JSON.stringify(JSON.parse(this.metadata))));
+      let data = JSON.stringify(JSON.stringify(JSON.parse(this.metadata)));
+      data = `'${data.substring(1, data.length - 1)}'`;
+      copyAtClipboard(data);
       this.$tips('格式转换并复制成功');
     }
   }
@@ -59,6 +70,8 @@ export default {
   box-sizing: border-box;
 }
 .layout-container {
+  background: #fff;
+  min-height: 100vh;
   padding: 20px 40px;
 
   .title {

@@ -11,4 +11,19 @@ export default class BaseEventHandle {
   }
 
   async exec() {}
+
+  log(...args) {
+    if (window.__debug_log__) {
+      console.log(`[eventHandle/${this.eventHandle.type}]`, ...args);
+    }
+  }
+
+  async parseConditions(config) {
+    let result = true;
+    const { conditions, conditionType = 'every' } = config || {};
+    if (conditions) {
+      result = await this.coreProcessor.parseConditions(conditions, conditionType, this.eventData);
+    }
+    return result;
+  }
 }

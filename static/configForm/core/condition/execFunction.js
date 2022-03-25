@@ -11,6 +11,7 @@ export default class ExecFunctionCondition extends BaseCondition {
   }
 
   exec() {
+    this.log('exec() start, condition =', this.condition, 'eventData =', this.eventData);
     const { functionBody } = this.condition;
     // 参数只接收对象类型，用的时候统一从 args 里取
     // 注意，因为这种形式执行的函数是运行期动态创建，为了兼容 IE，配置文件编写扩展函数时，不要使用 ES6 语法

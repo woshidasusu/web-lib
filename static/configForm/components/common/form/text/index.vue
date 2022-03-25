@@ -2,18 +2,15 @@
   <!-- 文本框的必填校验默认不显示错误信息 -->
   <el-form-item
     :label="formTemplate.label"
-    :prop="formTemplate.name"
+    :prop="parentModelName + formTemplate.name"
     :label-width="formTemplate.labelWidth"
     :required="!!+formTemplate.required"
-    :rules="
-      formTemplate.validateRules || {
-        required: true,
-        message: ' ',
-        trigger: 'change'
-      }
-    "
+    :rules="[...(formTemplate.validateRules || []), { required: !!+formTemplate.required, message: ' ' }]"
   >
-    <span>{{ formTemplate.showValue || model }}</span>
+    <template v-if="formTemplate.labelSlot" slot="label">
+      <slot v-bind="formTemplate" :form-model="formModel" :name="formTemplate.labelSlot.slotName"></slot>
+    </template>
+    <span>{{ formatShow }}</span>
   </el-form-item>
 </template>
 
@@ -35,6 +32,11 @@ export default {
       default: () => {
         return {};
       }
+    },
+    // 在 formModel 中，父级的字段名
+    parentModelName: {
+      type: String,
+      default: ''
     }
   },
   data() {
@@ -59,11 +61,20 @@ export default {
         }
         this.insideModel = value;
       }
+    },
+    formatShow() {
+      const format = this.formTemplate.format;
+      if (format?.type === 'array' && Array.isArray(this.model)) {
+        return this.model.map(v => v[format?.fieldConfig?.label || 'name']).join(format?.split || '，');
+      } else if (format?.type === 'map') {
+        return format?.map[this.model];
+      }
+      return this.formTemplate.showValue || this.model;
     }
   },
   watch: {
     metadata: {
-      handler: function (newV) {
+      handler: function(newV) {
         this.parseMetadata();
       },
       immediate: true

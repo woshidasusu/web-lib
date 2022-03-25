@@ -9,6 +9,12 @@ import DataService from './dataService';
 import MetadataHandler from './metadataHandler';
 import FormModelHandler from './formModelHandler';
 
+const log = (...args) => {
+  if (window.__debug_log__) {
+    console.log('[core]', ...args);
+  }
+};
+
 /**
  * 中央处理器，持有配置化页面根组件实例，统筹所有配置化处理器工作
  */
@@ -75,6 +81,7 @@ export default class CoreProcessor {
     }
     if (metadata.dataSource) {
       const saveKeys = [];
+      const saveType = [];
       const allP = [];
       let arr = [];
       // 表单根元素上支持配置多个数据源
@@ -86,14 +93,19 @@ export default class CoreProcessor {
       arr.forEach(v => {
         if (v.saveKey) {
           saveKeys.push(v.saveKey);
+          saveType.push(v.saveType || 'window'); // 保存方式，支持 window, store
           allP.push(this.parseDataSource(v));
         }
       });
       const result = await Promise.all(allP);
       saveKeys.forEach((key, i) => {
-        window[Symbol.for(key)] = result[i];
-        this.keysSavedInWindow = this.keysSavedInWindow || [];
-        this.keysSavedInWindow.push(key);
+        if (saveType[i] === 'store') {
+          this.getStore()?.commit(`update${key[0].toUpperCase()}${key.substr(1)}`, result[i]);
+        } else {
+          window[Symbol.for(key)] = result[i];
+          this.keysSavedInWindow = this.keysSavedInWindow || [];
+          this.keysSavedInWindow.push(key);
+        }
       });
     }
   }
@@ -103,8 +115,8 @@ export default class CoreProcessor {
    * @param {*} dataSource
    * @returns
    */
-  async parseDataSource(dataSource) {
-    const result = await this.getDataSource(dataSource).exec();
+  async parseDataSource(dataSource, extraArgs) {
+    const result = await this.getDataSource(dataSource, extraArgs).exec();
     return result;
   }
 
@@ -196,11 +208,11 @@ export default class CoreProcessor {
    * @param {*} params
    * @returns
    */
-  async parseParams(params) {
+  async parseParams(params, extraArgs) {
     const res = {};
     if (Array.isArray(params) && params.length > 0) {
       for (let i = 0; i < params.length; i++) {
-        const p = await this.getParam(params[i]).exec();
+        const p = await this.getParam(params[i], extraArgs).exec();
         Object.assign(res, p);
       }
     }
@@ -214,28 +226,30 @@ export default class CoreProcessor {
    * @param {*} eventData
    */
   handleComponentEvent(event, itemId, eventData) {
+    log('handleComponentEvent()', { event, itemId, eventData });
     // 根据事件监听处理响应事件
     const eventListenerMap = this.getStore()?.state()?.eventListenerMap || {};
     const eventListener = eventListenerMap[itemId];
     if (eventListener) {
-      const find = eventListener.find(v => v.event === event);
-      if (find) {
-        const { handles = [], conditions, conditionType } = find;
-        this.parseConditions(conditions, conditionType, eventData).then(valid => {
-          if (valid) {
-            this.parseEventHandles(handles, eventData);
-          }
-        });
-      }
+      eventListener.forEach(v => {
+        if (v.event === event) {
+          const { handles = [], conditions, conditionType } = v;
+          this.parseConditions(conditions, conditionType, eventData).then(valid => {
+            if (valid) {
+              this.parseEventHandles(handles, eventData);
+            }
+          });
+        }
+      });
     }
   }
 
   /**
    * 解析并执行所有组件的初始化行为
    */
-  handleInitRules() {
-    const metadataMap = this.getStore()?.state()?.metadataMap || {};
-    const initRulesMap = this.getStore()?.state()?.initRulesMap || {};
+  handleInitRules({ _initRulesMap = null, _metadataMap = null } = {}) {
+    const metadataMap = _metadataMap || this.getStore()?.state()?.metadataMap || {};
+    const initRulesMap = _initRulesMap || this.getStore()?.state()?.initRulesMap || {};
     Object.keys(metadataMap).forEach(id => {
       if (initRulesMap[id]) {
         const rules = initRulesMap[id];
@@ -252,12 +266,28 @@ export default class CoreProcessor {
   }
 
   /**
+   * 批量将所有组件的 disabled 设置为 1
+   */
+  disableAll(disableAllConfig, _metadataMap) {
+    const { conditions, conditionType } = disableAllConfig || {};
+    this.parseConditions(conditions, conditionType).then(valid => {
+      if (valid) {
+        const metadataMap = _metadataMap || this.getStore()?.state()?.metadataMap || {};
+        Object.values(metadataMap).forEach(v => {
+          v.disabled = 1;
+        });
+      }
+    });
+  }
+
+  /**
    * 表单提交
    * @param {*} url
    * @param {*} data
    * @returns
    */
   handleSubmit(url, data) {
+    log('handleSubmit()', { url, data });
     return submit(url, data);
   }
 
@@ -294,11 +324,61 @@ export default class CoreProcessor {
   }
 
   /**
+   * 获取临时数据挂载对象，可用于给 dataService 里挂载数据使用
+   */
+  getTempData() {
+    return this.getStore()?.state().tempData;
+  }
+
+  /**
    * 获取表单的数据模型
    * @returns
    */
   getFormModel() {
     return this.getStore()?.state().formModel;
+  }
+
+  /**
+   * 获取以 _id 为键值缓存的表单数据模型
+   * @returns
+   */
+  getFormModelMap() {
+    return this.getStore()?.state().formModelMap;
+  }
+
+  /**
+   * 获取指定表单组件字段所挂载的 formModel 对象，常用语内嵌组件或数组项组件的场景
+   * @param {*} id 组件 id
+   * @returns
+   */
+  getParentFormModelById(id) {
+    return this.getFormModelMap()[id];
+  }
+
+  /**
+   * 解析组件的联动关系、事件监听、初始化规则，以及缓存
+   * @param {*} components
+   * @returns {} {_initRulesMap,_metadataMap,_eventListenerMap}
+   */
+  getInfoByParseComponents(components) {
+    return this.getMetadataHandler().getInfoByParseMetadata(components);
+  }
+
+  /**
+   * 获取以 _id 为键值缓存的元数据
+   * @returns
+   */
+  getMetadataMap() {
+    return this.getStore()?.state().metadataMap || {};
+  }
+
+  /**
+   * 获取指定组件的元数据
+   * @param {*} id 组件 id
+   * @returns
+   */
+  getMetadataById(id) {
+    return this.getMetadataMap()[id];
   }
 
   /**
@@ -406,5 +486,58 @@ export default class CoreProcessor {
    */
   getGrayPublish() {
     return this.rootInstances?.$store?.state.app.grayPublish || {};
+  }
+
+  /**
+   * 更新数据仓库里的初始化规则缓存信息 initRulesMap
+   * @param {*} data
+   */
+  updateInitRulesMap(data) {
+    log('updateInitRulesMap', data);
+    if (data) {
+      const initRulesMap = this.getStore()?.state()?.initRulesMap;
+      this.getStore()?.commit('updateInitRulesMap', { ...initRulesMap, ...data });
+    }
+  }
+
+  /**
+   * 更新数据仓库里的元数据缓存信息 metadataMap
+   * @param {*} data
+   */
+  updateMetadataMap(data) {
+    log('updateMetadataMap', data);
+    if (data) {
+      const metadataMap = this.getStore()?.state()?.metadataMap;
+      this.getStore()?.commit('updateMetadataMap', { ...metadataMap, ...data });
+    }
+  }
+
+  /**
+   * 更新数据仓库里的事件监听缓存信息 eventListenerMap
+   * @param {*} data
+   */
+  updateEventListenerMap(data) {
+    log('updateEventListenerMap', data);
+    if (data) {
+      const eventListenerMap = this.getStore()?.state()?.eventListenerMap;
+      this.getStore()?.commit('updateEventListenerMap', { ...eventListenerMap, ...data });
+    }
+  }
+
+  /**
+   * 更新数据仓库里的表单模型缓存信息 formModelMap
+   * @param {*} ids
+   * @param {*} data
+   */
+  updateFormModelMap(ids, data) {
+    log('updateFormModelMap', data);
+    if (ids?.length && data) {
+      const map = {};
+      ids.forEach(id => {
+        map[id] = data;
+      });
+      const formModelMap = this.getStore()?.state()?.formModelMap;
+      this.getStore()?.commit('updateFormModelMap', { ...formModelMap, ...map });
+    }
   }
 }

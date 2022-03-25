@@ -1,5 +1,4 @@
-import Vue from 'vue';
-import VueRouter from 'vue-router';
+import { browserEnv } from '@/utils';
 
 const META = {
   title: '配置化平台',
@@ -8,7 +7,7 @@ const META = {
   noAuth: 1
 };
 
-const routes = [
+const _routes = [
   {
     path: '/config-form',
     component: () => import('../designer/index.vue'),
@@ -42,19 +41,23 @@ const routes = [
         }
       },
       {
+        path: 'compare',
+        component: () => import('../designer/views/compare.vue'),
+        meta: {
+          ...META
+        }
+      },
+      {
         path: '',
         redirect: 'list'
       }
     ]
-  },
-  { path: '*', redirect: '/config-form' }
+  }
 ];
 
-Vue.use(VueRouter);
+let routes = [];
+if (browserEnv() !== 'product') {
+  routes = _routes;
+}
 
-const router = new VueRouter({
-  mode: 'history',
-  routes: routes
-});
-
-export default router;
+export default routes;

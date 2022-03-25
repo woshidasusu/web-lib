@@ -3,6 +3,7 @@ export default {
   type: 'inputNumber',
   label: '数字输入框',
   width: '',
+  style: '',
   required: 0,
   hidden: 0,
   name: ''

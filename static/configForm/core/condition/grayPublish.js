@@ -5,8 +5,11 @@ import BaseCondition from './base';
  */
 export default class GrayPublishCondition extends BaseCondition {
   async exec() {
+    this.log('exec() start, condition =', this.condition);
     const { code, value } = this.condition;
     const grayPublish = this.coreProcessor.getGrayPublish();
-    return grayPublish[code] === value;
+    const result = grayPublish[code] === value;
+    this.log('exec() return', result);
+    return result;
   }
 }

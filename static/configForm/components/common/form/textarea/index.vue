@@ -1,23 +1,31 @@
 <template>
   <el-form-item
     :label="formTemplate.label"
-    :prop="formTemplate.name"
+    :prop="parentModelName + formTemplate.name"
     :label-width="formTemplate.labelWidth"
     :required="!!+formTemplate.required"
-    :rules="formTemplate.validateRules"
+    :rules="[
+      ...(formTemplate.validateRules || []),
+      { required: !!+formTemplate.required, message: formTemplate.label + '不能为空' }
+    ]"
   >
     <el-input
       v-model="model"
       type="textarea"
+      :class="[formTemplate.class]"
       :style="{ width: formTemplate.width || '100%' }"
       :placeholder="formTemplate.placeholder || `请输入${formTemplate.label || ''}`"
       :disabled="!!+formTemplate.disabled"
+      :autosize="!!+formTemplate.autosize"
       :rows="+formTemplate.rows || 2"
       :maxlength="+formTemplate.maxlength"
       :show-word-limit="!!+formTemplate.showWordLimit"
+      v-bind="formTemplate.$props"
       v-on="onEvents"
+      @click.native="handleEvent('click', formTemplate._id, $event)"
     >
     </el-input>
+    <span v-if="formTemplate.tip" class="tip-text"> {{ formTemplate.tip }}</span>
   </el-form-item>
 </template>
 
@@ -39,6 +47,11 @@ export default {
       default: () => {
         return {};
       }
+    },
+    // 在 formModel 中，父级的字段名
+    parentModelName: {
+      type: String,
+      default: ''
     }
   },
   data() {
@@ -77,7 +90,7 @@ export default {
   },
   watch: {
     metadata: {
-      handler: function (newV) {
+      handler: function(newV) {
         this.parseMetadata();
       },
       immediate: true
@@ -109,5 +122,10 @@ export default {
 <style lang="scss" scoped>
 * {
   box-sizing: border-box;
+}
+.tip-text {
+  font-size: 14px;
+  font-weight: 400;
+  color: rgba(153, 153, 153, 1);
 }
 </style>

@@ -1,25 +1,51 @@
 <template>
-  <div class="container" :style="{ 'margin-left': formTemplate.labelWidth, width: formTemplate.width }">
+  <div
+    class="container"
+    :style="{ 'margin-left': formTemplate.labelWidth, width: formTemplate.width, ...formTemplate.style }"
+  >
     <div
       v-for="(items, index) in columns"
       :key="index"
       class="column-container"
       :style="{
-        width: itemWidth[index]
+        width: itemWidth[index],
+        ...itemStyle[index]
       }"
     >
       <template v-for="(item, i) in items">
+        <!-- 第一版 slot 设计感觉不好用 -->
+        <slot
+          v-if="item._id && !+item.hidden"
+          :name="'before' + item._id"
+          v-bind="metadataMap['before' + item._id]"
+          :form-model="insideFormModel"
+        ></slot>
+        <!-- 第二版 slot 排版位置直接根据元数据配置的位置即可 -->
+        <template v-if="item.type === 'slot2'">
+          <slot v-if="!+item.hidden" :name="item.slotName" v-bind="item" :form-model="insideFormModel"></slot>
+        </template>
         <component
           :is="ALL_COMPONENTS[item.type] || ALL_COMPONENTS['element']"
-          v-if="!+item.hidden"
+          v-else-if="!+item.hidden"
           :ref="item._id"
           :key="'c' + index + i"
           :style="item.style"
           :metadata="item"
           :form-model="insideFormModel"
+          :parent-model-name="wholeModelName"
           :type="item.type"
           @event="handleComponentEvent"
-        ></component>
+        >
+          <template v-for="s in slots" #[s]="data">
+            <slot :name="s" v-bind="data"></slot>
+          </template>
+        </component>
+        <slot
+          v-if="item._id && !+item.hidden"
+          :name="'after' + item._id"
+          v-bind="metadataMap['after' + item._id]"
+          :form-model="insideFormModel"
+        ></slot>
       </template>
     </div>
   </div>
@@ -38,6 +64,7 @@ const log = (...args) => {
   }
 };
 export default {
+  inject: ['getStore'],
   props: {
     metadata: {
       type: Object,
@@ -48,6 +75,11 @@ export default {
       default: () => {
         return {};
       }
+    },
+    // 在 formModel 中，父级的字段名
+    parentModelName: {
+      type: String,
+      default: ''
     }
   },
   data() {
@@ -72,6 +104,12 @@ export default {
       }
       return this.formModel;
     },
+    slots() {
+      return Object.keys(this.$scopedSlots);
+    },
+    metadataMap() {
+      return this.getStore()?.state()?.metadataMap || {};
+    },
     itemWidth() {
       const itemWidths = [];
       const defaultWidth = `calc(${100 / this.columns.length}% - 30px)`;
@@ -85,11 +123,27 @@ export default {
         }
       });
       return itemWidths;
+    },
+    itemStyle() {
+      return this.formTemplate.itemStyle || [];
+    },
+    // 传给子集组件的表单字段全路径
+    wholeModelName(i) {
+      let name = this.parentModelName || '';
+      if (this.formTemplate.name) {
+        name += this.formTemplate.name;
+        if (Array.isArray(this.formModel[this.formTemplate.name])) {
+          // FIXME 写死 0 应该有问题
+          name += '[0]';
+        }
+        name += '.';
+      }
+      return name;
     }
   },
   watch: {
     metadata: {
-      handler: function (newV) {
+      handler: function(newV) {
         this.parseMetadata();
       },
       immediate: true

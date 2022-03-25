@@ -9,4 +9,10 @@ export default class BaseParam {
   }
 
   async exec() {}
+
+  log(...args) {
+    if (window.__debug_log__) {
+      console.log(`[param/${this.param.type}]`, ...args);
+    }
+  }
 }

@@ -5,9 +5,12 @@ import BaseParam from './base';
  */
 export default class ConstantParam extends BaseParam {
   async exec() {
+    this.log('exec() start, param =', this.param);
     const { key, value } = this.param;
-    return {
+    const result = {
       [key]: value
     };
+    this.log('exec() return', result);
+    return result;
   }
 }

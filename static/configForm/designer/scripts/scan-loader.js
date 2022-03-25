@@ -1,3 +1,5 @@
+// 2021-12-23： TODO 由于没有精力维护脚本，该脚本已不足以满足现有的配置化使用场景了，目前配置文件手动维护，不通过脚本生成了，后续再改造脚本吧
+
 /* eslint-disable */
 const path = require('path');
 const { getAttr } = require('./get-attr');
@@ -12,9 +14,13 @@ const metadataCache = {};
 
 module.exports = function(source) {
   const loaderContext = this;
-  const { resourceQuery } = loaderContext;
+  const { resourceQuery, resourcePath } = loaderContext;
 
-  if (resourceQuery.indexOf('type=template') > -1 && source.indexOf('<config-form') > -1) {
+  if (
+    resourceQuery.indexOf('type=template') > -1 &&
+    source.indexOf('<config-form') > -1 &&
+    resourcePath.indexOf('configForm') === -1
+  ) {
     console.log('=============start==============================>');
     const options = getOptions(loaderContext);
     const metadataListFilePath = path.resolve(options.metadataListFile);

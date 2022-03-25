@@ -8,10 +8,20 @@
     :rules="formTemplate.validateRules"
   >
     <template v-for="(item, i) in components">
-      <slot :name="'before' + item._id" v-bind="metadataMap['before' + item._id]" :form-model="formModel"></slot>
+      <!-- 第一版 slot 设计感觉不好用 -->
+      <slot
+        v-if="item._id && !+item.hidden"
+        :name="'before' + item._id"
+        v-bind="metadataMap['before' + item._id]"
+        :form-model="formModel"
+      ></slot>
+      <!-- 第二版 slot 排版位置直接根据元数据配置的位置即可 -->
+      <template v-if="item.type === 'slot2'">
+        <slot v-if="!+item.hidden" :name="item.slotName" v-bind="item" :form-model="formModel"></slot>
+      </template>
       <component
         :is="ALL_COMPONENTS[item.type] || ALL_COMPONENTS['element']"
-        v-if="!+item.hidden"
+        v-else-if="!+item.hidden"
         :ref="item._id"
         :key="i"
         :style="item.style"
@@ -24,7 +34,12 @@
           <slot :name="s" v-bind="data"></slot>
         </template>
       </component>
-      <slot :name="'after' + item._id" v-bind="metadataMap['after' + item._id]" :form-model="formModel"></slot>
+      <slot
+        v-if="item._id && !+item.hidden"
+        :name="'after' + item._id"
+        v-bind="metadataMap['after' + item._id]"
+        :form-model="formModel"
+      ></slot>
     </template>
 
     <slot name="footer-btns">
@@ -82,6 +97,11 @@ export default {
     afterParseFormModel: {
       type: Function,
       default: () => undefined
+    },
+    beforeRender: {
+      // 渲染组件前的操作,这时候已经处理好所有初始化数据,目前抛出了formModel和metaData
+      type: Function,
+      default: () => undefined
     }
   },
   data() {
@@ -133,12 +153,21 @@ export default {
       }
       await coreProcessor.parseComponents(this.metadata.components);
       await coreProcessor.parseGlobalConfig(this.metadata);
+      if (this.metadata.disableAll) {
+        // 一次性把所有组件的 disaled 置为 1，可用于编辑页批量禁止编辑的场景，个别组件可通过 initRules 再去更新 disabled
+        await coreProcessor.disableAll(this.metadata.disableAll);
+      }
 
       // 处理表单组件的初始化规则
       coreProcessor.handleInitRules();
       // 渲染表单前，先备份一份初始干净的表单模型
       this.formModelBackUp = JSON.parse(JSON.stringify(this.formModel));
       log('parseFormModel()', this.formModel);
+
+      if (this.beforeRender) {
+        await this.beforeRender(this.formModel, this.metadata);
+      }
+
       // 渲染表单组件
       this.components = this.metadata.components;
       setTimeout(() => {
@@ -157,7 +186,7 @@ export default {
       }
       // 校验是否有支持的 type 表单组件
       const findUndefined = this.metadata.components.find(v => {
-        return !this.ALL_COMPONENTS[v.type] && !v.type.startsWith('el-');
+        return !this.ALL_COMPONENTS[v.type] && !v.type.startsWith('el-') && !['slot2'].includes(v.type);
       });
       if (findUndefined) {
         console.error(`不支持 ${findUndefined.type} 表单组件`);
@@ -274,16 +303,23 @@ export default {
       this.$refs.formRef.clearValidate();
     },
     // 暴露给外部使用的方法
-    refresh() {
+    refresh(refreshFormModel) {
       this.loading = true;
-      // 重新渲染表单并恢复到初始状态
-      this.formModel = JSON.parse(JSON.stringify(this.formModelBackUp));
-      this.getStore()?.commit('updateFormModel', this.formModel);
       this.components = [];
-      setTimeout(() => {
-        this.components = [...this.metadata.components];
-        this.loading = false;
-      }, 0);
+      if (refreshFormModel) {
+        // 重新从头开始解析元数据；常用于表单的编辑、详情场景的页面刷新，因为此时需要重新拉取表单详情数据更新页面
+        setTimeout(() => {
+          this.parseMetadata();
+        }, 0);
+      } else {
+        // 仅重新渲染组件，并延用初始状态的 formModel；常用于表单登记场景的页面刷新，因为此时只需要达到恢复初始状态的表单刷新效果即可
+        this.formModel = JSON.parse(JSON.stringify(this.formModelBackUp));
+        this.getStore()?.commit('updateFormModel', this.formModel);
+        setTimeout(() => {
+          this.components = [...this.metadata.components];
+          this.loading = false;
+        }, 0);
+      }
     },
     // 暴露给外部使用的方法
     getFormModel() {

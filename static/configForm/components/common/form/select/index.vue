@@ -1,10 +1,13 @@
 <template>
   <el-form-item
     :label="formTemplate.label"
-    :prop="formTemplate.name"
+    :prop="parentModelName + formTemplate.name"
     :label-width="formTemplate.labelWidth"
     :required="!!+formTemplate.required"
-    :rules="formTemplate.validateRules"
+    :rules="[
+      ...(formTemplate.validateRules || []),
+      { required: !!+formTemplate.required, message: formTemplate.label + '不能为空' }
+    ]"
   >
     <el-select
       v-model="model"
@@ -14,6 +17,7 @@
       :disabled="!!+formTemplate.disabled"
       :clearable="!!+formTemplate.clearable"
       :filterable="!!+formTemplate.filterable"
+      v-bind="formTemplate.$props"
       size="medium"
       v-on="onEvents"
     >
@@ -47,6 +51,11 @@ export default {
       default: () => {
         return {};
       }
+    },
+    // 在 formModel 中，父级的字段名
+    parentModelName: {
+      type: String,
+      default: ''
     }
   },
   data() {
@@ -100,10 +109,16 @@ export default {
   },
   watch: {
     metadata: {
-      handler: function (newV) {
+      handler: function(newV) {
         this.parseMetadata();
       },
       immediate: true
+    },
+    'metadata.dataSource': {
+      handler: async function(newV, oldV) {
+        const data = await this.coreProcessor.parseDataSource(newV);
+        this.options = data || [];
+      }
     }
   },
   methods: {
@@ -117,7 +132,11 @@ export default {
       const { dataSource } = this.metadata;
       this.options = await this.coreProcessor.parseDataSource(dataSource);
       this.options = this.options || [];
-      const { isSelectFirst = false } = dataSource;
+      let isSelectFirst = !!+this.metadata.isSelectFirst;
+      if (dataSource.isSelectFirst != null) {
+        // 兼容旧版设计
+        isSelectFirst = !!+dataSource.isSelectFirst;
+      }
       if (isSelectFirst && this.options.length && !this.model) {
         this.model = this.options[0][this.fieldConfig.value];
       }

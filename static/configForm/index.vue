@@ -85,8 +85,10 @@ export default {
     // 生成配置化处理器
     const coreProcessor = new CoreProcessor(this);
     // 获取元数据
-    const metadata = await coreProcessor.getRemoteMetadata(this.code, this.version, this.metadata);
-
+    let metadata = await coreProcessor.getRemoteMetadata(this.code, this.version, this.metadata);
+    if (process.env.NODE_ENV === 'development') {
+      metadata = this.metadata;
+    }
     const store = metadata?.store;
     // 声明 store 数据仓库
     const state = {
@@ -99,6 +101,7 @@ export default {
       initFormData: null, // 表单的初始化数据，用来编辑场景的数据回填处理
       eventListenerMap: null, // 组件的事件监听处理，以 _id 为键值存取
       initRulesMap: null, // 组件的初始化规则，以 _id 为键值存取
+      tempData: {}, // 临时数据存放中心，开辟给 dataService 挂载数据使用
       ...store?.state // 自定义
     };
     // 注册 store
@@ -143,8 +146,8 @@ export default {
       return this.$refs.formPageRef.clearValidate();
     },
     // 暴露给外部使用的方法
-    refresh() {
-      return this.$refs.formPageRef.refresh();
+    refresh(refreshFormModel) {
+      return this.$refs.formPageRef.refresh(refreshFormModel);
     },
     // 暴露给外部使用的方法
     submit() {

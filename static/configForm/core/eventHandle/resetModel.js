@@ -6,6 +6,7 @@ import BaseEventHandle from './base';
  */
 export default class ResetModelEvent extends BaseEventHandle {
   async exec() {
+    this.log('exec() start, eventHandle =', this.eventHandle, 'eventData =', this.eventData);
     const { formModelKey, value } = this.eventHandle;
     const formModel = this.coreProcessor.getFormModel();
     let obj = formModel;

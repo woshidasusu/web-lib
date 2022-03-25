@@ -6,12 +6,15 @@ import request from '../request';
  */
 export default class ApiDataSource extends BaseDataSource {
   async exec() {
+    this.log('exec() start, dataSource =', this.dataSource, 'eventData =', this.eventData);
     const { params } = this.dataSource;
     let _params = {};
     if (params) {
-      _params = await this.coreProcessor.parseParams(params);
+      _params = await this.coreProcessor.parseParams(params, { eventData: this.eventData });
     }
-    const result = await request({ ...this.dataSource, params: _params });
+    let result = await request({ ...this.dataSource, params: _params });
+    result = await this.parseDataAfterFetched(result);
+    this.log('exec() return', result);
     return result;
   }
 }
